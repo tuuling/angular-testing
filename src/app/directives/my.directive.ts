@@ -1,22 +1,41 @@
-import {Directive, Renderer2, ElementRef, OnInit} from '@angular/core';
+import {Directive, Renderer2, ElementRef, OnInit, Input, OnDestroy} from '@angular/core';
+import {FormControl} from '@angular/forms';
 
 @Directive({
   selector: '[appTest]'
 })
-export class MyDirective implements OnInit {
+export class MyDirective implements OnInit, OnDestroy {
   constructor(private renderer: Renderer2,
               private el: ElementRef) {
+
   }
+
+  @Input() formControl: FormControl;
+
+  private div;
+  private unlisten;
 
   ngOnInit() {
-    const div = this.renderer.createElement('div');
+    this.div = this.renderer.createElement('div');
     const text = this.renderer.createText('Hello world!');
 
-    this.renderer.appendChild(div, text);
-    this.renderer.insertBefore(this.el.nativeElement.parentNode, div, this.el.nativeElement);
+    this.renderer.appendChild(this.div, text);
 
-    this.renderer.listen(div, 'click', () => {
-      console.log('asdf');
+    this.unlisten = this.renderer.listen(this.div, 'click', () => {
+      this.formControl.patchValue('');
+    });
+
+    this.formControl.valueChanges.subscribe(val => {
+      if (val) {
+        this.renderer.insertBefore(this.el.nativeElement.parentNode, this.div, this.el.nativeElement);
+      } else {
+        this.renderer.removeChild(this.el.nativeElement.parentNode, this.div);
+      }
     });
   }
+
+  ngOnDestroy() {
+    this.unlisten();
+  }
+
 }
